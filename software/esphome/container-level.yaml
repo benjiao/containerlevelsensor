@@ -1,0 +1,92 @@
+esphome:
+  name: container-level
+  friendly_name: Container Level
+  on_boot:
+    priority: -10
+    then:
+      - delay: 70s
+      - if:
+          condition:
+            binary_sensor.is_off: keep_awake
+          then:
+            - deep_sleep.enter: ds
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: esp-idf
+
+globals:
+  - id: my_global_int
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "replace-with-your-own-key"
+ota:
+  - platform: esphome
+    password: "replace-with-your-own-password"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: none
+  output_power: 17dB
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Container-Level Fallback Hotspot"
+    password: "replace-with-your-own-password"
+
+captive_portal:
+
+i2c:
+  sda: GPIO04
+  scl: GPIO05
+  scan: true
+  id: bus_a
+
+binary_sensor:
+  - platform: gpio
+    id: keep_awake
+    name: "Keep Awake Jumper"
+    pin:
+      number: GPIO3
+      mode: INPUT_PULLUP
+      inverted: true
+      
+deep_sleep:
+  id: ds
+  sleep_duration: 1h
+sensor:
+  - platform: vl53l0x
+    id: sensor_distance
+    name: "VL53L0x Distance"
+    address: 0x29
+    long_range: true
+    update_interval: 15s
+    
+  - platform: template
+    name: "Level"
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    update_interval: 15s
+    lambda: |-
+      static float bottom_distance = 0.55;
+
+      if (isnan(id(sensor_distance).state) || isnan(id(sensor_distance).state)) {
+        return NAN;
+      }
+
+      float dist = id(sensor_distance).state;
+      if (dist > bottom_distance) {
+        return NAN;
+      }
+
+      return 100 - (dist / bottom_distance) * 100;
