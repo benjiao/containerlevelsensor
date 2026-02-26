@@ -1,0 +1,3 @@
+[submodule "ContainerLevelSensor/ESP32-C3-SuperMini"]
+	path = ContainerLevelSensor/ESP32-C3-SuperMini
+	url = git@github.com:mrtnvgr/KiCad_ESP32-C3-SuperMini.git
